@@ -5,6 +5,8 @@
 // <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
+//
+// Adapt by [dentiny](https://github.com/dentiny).
 
 //! Port of [bitstream_io](https://docs.rs/bitstream-io/latest) for usage with tokio runtime
 //!
@@ -35,12 +37,12 @@
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
 
-use std::io;
 use std::fmt::Debug;
-use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
+use std::io;
 use std::marker::PhantomData;
 use std::mem;
 use std::ops::{BitOrAssign, BitXor, Not, Rem, RemAssign, Shl, ShlAssign, Shr, ShrAssign, Sub};
+use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
 pub use async_trait::async_trait;
 

@@ -5,6 +5,8 @@
 // <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
+//
+// Adapt by [dentiny](https://github.com/dentiny).
 
 //! Traits and implementations for reading bits from a stream.
 //!
@@ -18,7 +20,7 @@
 //! use std::io::{Cursor};
 //! use tokio::io::{AsyncRead, AsyncReadExt};
 //! use tokio_bitstream_io::{BigEndian, BitReader, BitRead, ByteReader, ByteRead, LittleEndian};
-//! 
+//!
 //! let flac: Vec<u8> = vec![0x66,0x4c,0x61,0x43,0x00,0x00,0x00,0x22,
 //!                          0x10,0x00,0x10,0x00,0x00,0x06,0x06,0x00,
 //!                          0x21,0x62,0x0a,0xc4,0x42,0xf0,0x00,0x04,
@@ -556,7 +558,7 @@ impl<R: AsyncRead + Unpin + Send + Sync, E: Endianness> BitRead for BitReader<R,
     /// let mut reader = BitReader::endian(Cursor::new(&data), LittleEndian);
     /// assert_eq!(reader.read_signed::<i8>(4).await.unwrap(), 7);
     /// assert_eq!(reader.read_signed::<i8>(4).await.unwrap(), -5);
-    /// # }); 
+    /// # });
     /// ```
     ///
     /// ```
@@ -665,12 +667,14 @@ impl<R: AsyncRead + Unpin + Send + Sync, E: Endianness> BitRead for BitReader<R,
     /// ```
     async fn read_unary0(&mut self) -> io::Result<u32> {
         if self.bitqueue.is_empty() {
-            read_aligned_unary(&mut self.reader, 0b1111_1111, &mut self.bitqueue).await
+            read_aligned_unary(&mut self.reader, 0b1111_1111, &mut self.bitqueue)
+                .await
                 .map(|u| u + self.bitqueue.pop_1())
         } else if self.bitqueue.all_1() {
             let base = self.bitqueue.len();
             self.bitqueue.clear();
-            read_aligned_unary(&mut self.reader, 0b1111_1111, &mut self.bitqueue).await
+            read_aligned_unary(&mut self.reader, 0b1111_1111, &mut self.bitqueue)
+                .await
                 .map(|u| base + u + self.bitqueue.pop_1())
         } else {
             Ok(self.bitqueue.pop_1())
@@ -703,12 +707,14 @@ impl<R: AsyncRead + Unpin + Send + Sync, E: Endianness> BitRead for BitReader<R,
     /// ```
     async fn read_unary1(&mut self) -> io::Result<u32> {
         if self.bitqueue.is_empty() {
-            read_aligned_unary(&mut self.reader, 0b0000_0000, &mut self.bitqueue).await
+            read_aligned_unary(&mut self.reader, 0b0000_0000, &mut self.bitqueue)
+                .await
                 .map(|u| u + self.bitqueue.pop_0())
         } else if self.bitqueue.all_0() {
             let base = self.bitqueue.len();
             self.bitqueue.clear();
-            read_aligned_unary(&mut self.reader, 0b0000_0000, &mut self.bitqueue).await
+            read_aligned_unary(&mut self.reader, 0b0000_0000, &mut self.bitqueue)
+                .await
                 .map(|u| base + u + self.bitqueue.pop_0())
         } else {
             Ok(self.bitqueue.pop_0())
@@ -785,7 +791,7 @@ where
                     self.byte_align();
                     self.reader.seek(io::SeekFrom::Start(bytes)).await?;
                     self.skip(bits).await?;
-                    return Ok(from_start_pos)
+                    return Ok(from_start_pos);
                 }
                 io::SeekFrom::End(from_end_pos) => {
                     let reader_end = self.reader.seek(io::SeekFrom::End(0)).await?;
@@ -881,7 +887,11 @@ where
     reader.read_exact(&mut buf).await.map(|_| buf[0])
 }
 
-async fn read_aligned<R, E, N>(mut reader: R, bytes: u32, acc: &mut BitQueue<E, N>) -> io::Result<()>
+async fn read_aligned<R, E, N>(
+    mut reader: R,
+    bytes: u32,
+    acc: &mut BitQueue<E, N>,
+) -> io::Result<()>
 where
     R: AsyncRead + Unpin + Send + Sync,
     E: Endianness,
@@ -889,7 +899,9 @@ where
 {
     if bytes > 0 {
         let mut buf = N::buffer();
-        reader.read_exact(&mut buf.as_mut()[0..bytes as usize]).await?;
+        reader
+            .read_exact(&mut buf.as_mut()[0..bytes as usize])
+            .await?;
         for b in &buf.as_ref()[0..bytes as usize] {
             acc.push(8, N::from_u8(*b));
         }
