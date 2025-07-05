@@ -5,6 +5,8 @@
 // <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
+//
+// Adapt by [dentiny](https://github.com/dentiny).
 
 //! Traits and implementations for writing bits to a stream.
 //!
@@ -92,18 +94,18 @@
 //!         for s in &self.comment {
 //!             write_entry(w, &s).await?    
 //!         }
-//! 
+//!
 //!         Ok(())
 //!     }
 //! }
 //!
-//! 
+//!
 //! # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
-//! 
+//!
 //! let mut flac: Vec<u8> = Vec::new();
 //!
 //! let mut writer = BitWriter::endian(&mut flac, BigEndian);
-//! 
+//!
 //! // stream marker
 //! writer.write_bytes(b"fLaC").await.unwrap();
 //!
@@ -144,7 +146,7 @@
 //! comment.write(&mut ByteWriter::new(writer.writer().unwrap())).await.unwrap();
 //!
 //! drop(writer);
-//! 
+//!
 //! assert_eq!(flac, vec![0x66,0x4c,0x61,0x43,0x00,0x00,0x00,0x22,
 //!                      0x10,0x00,0x10,0x00,0x00,0x06,0x06,0x00,
 //!                      0x21,0x62,0x0a,0xc4,0x42,0xf0,0x00,0x04,
@@ -166,7 +168,7 @@
 //!                      0x73,0x73,0x6f,0x72,0x74,0x65,0x64,0x0d,
 //!                      0x00,0x00,0x00,0x74,0x72,0x61,0x63,0x6b,
 //!                      0x6e,0x75,0x6d,0x62,0x65,0x72,0x3d,0x31]);
-//! # }); 
+//! # });
 //! ```
 
 #![warn(missing_docs)]
@@ -258,7 +260,7 @@ impl<W: AsyncWrite + Unpin + Send + Sync, E: Endianness> BitWriter<W, E> {
     /// ```
     /// use std::io::Write;
     /// use tokio_bitstream_io::{BigEndian, BitWriter, BitWrite};
-    /// 
+    ///
     /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
     /// let mut data = Vec::new();
     /// let (bits, value) = {
@@ -404,9 +406,8 @@ pub trait BitWrite: Send {
     /// ```
     async fn write_unary0(&mut self, value: u32) -> io::Result<()> {
         match value {
-            
             0 => self.write_bit(false).await,
-            
+
             bits @ 1..=31 => {
                 // self.write(value, (1u32 << bits) - 1).and_then(|()| self.write_bit(false)),
                 self.write(value, (1u32 << bits) - 1).await?;
@@ -418,7 +419,7 @@ pub trait BitWrite: Send {
                 self.write(value, 0xFFFF_FFFFu32).await?;
                 self.write_bit(false).await
             }
-            
+
             bits @ 33..=63 => {
                 // self.write(value, (1u64 << bits) - 1).and_then(|()| self.write_bit(false)),
                 self.write(value, (1u64 << bits) - 1).await?;
@@ -430,7 +431,7 @@ pub trait BitWrite: Send {
                 self.write(value, 0xFFFF_FFFF_FFFF_FFFFu64).await?;
                 self.write_bit(false).await
             }
-            
+
             mut bits => {
                 while bits > 64 {
                     self.write(64, 0xFFFF_FFFF_FFFF_FFFFu64).await?;
@@ -450,7 +451,7 @@ pub trait BitWrite: Send {
     ///
     /// # Example
     /// ```
-    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async { 
+    /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
     /// use tokio_bitstream_io::{BigEndian, BitWriter, BitWrite};
     /// let mut writer = BitWriter::endian(Vec::new(), BigEndian);
     /// writer.write_unary1(0).await.unwrap();
@@ -473,19 +474,19 @@ pub trait BitWrite: Send {
     async fn write_unary1(&mut self, value: u32) -> io::Result<()> {
         match value {
             0 => self.write_bit(true).await,
-            
+
             1..=32 => {
                 // self.write(value, 0u32).and_then(|()| self.write_bit(true)),
                 self.write(value, 0u32).await?;
                 self.write_bit(true).await
             }
-            
+
             33..=64 => {
                 // self.write(value, 0u64).and_then(|()| self.write_bit(true)),
                 self.write(value, 0u64).await?;
                 self.write_bit(true).await
             }
-            
+
             mut bits => {
                 while bits > 64 {
                     self.write(64, 0u64).await?;
@@ -535,7 +536,11 @@ pub trait HuffmanWrite<E: Endianness> {
     /// # Errors
     ///
     /// Passes along any I/O error from the underlying stream.
-    async fn write_huffman<T>(&mut self, tree: &WriteHuffmanTree<E, T>, symbol: T) -> io::Result<()>
+    async fn write_huffman<T>(
+        &mut self,
+        tree: &WriteHuffmanTree<E, T>,
+        symbol: T,
+    ) -> io::Result<()>
     where
         T: Ord + Copy + Send + Sync;
 }
@@ -714,7 +719,7 @@ impl<W: AsyncWrite + Unpin + Send + Sync, E: Endianness> HuffmanWrite<E> for Bit
     /// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
     /// use tokio_bitstream_io::{BigEndian, BitWriter, HuffmanWrite};
     /// use tokio_bitstream_io::huffman::compile_write_tree;
-    /// 
+    ///
     /// let tree = compile_write_tree(
     /// vec![('a', vec![0]),
     ///     ('b', vec![1, 0]),
